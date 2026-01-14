@@ -4,7 +4,7 @@ import { supabase } from "../supabaseClient";
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState(""); // ⭐ 이름 저장할 공간 추가
+  const [name, setName] = useState(""); 
   const [loading, setLoading] = useState(false);
   const [isLoginMode, setIsLoginMode] = useState(true);
 
@@ -21,7 +21,7 @@ export default function Login() {
       if (error) alert("로그인 실패: " + error.message);
     } else {
       // --- 회원가입 모드 ---
-      // ⭐ 이름이 비어있으면 안 되니까 체크
+      
       if (!name.trim()) {
         alert("이름을 입력해주세요!");
         setLoading(false);
@@ -33,7 +33,7 @@ export default function Login() {
         password,
         options: {
           data: {
-            full_name: name, // ⭐ 여기에 이름을 담아서 Supabase로 보냅니다!
+            full_name: name, 
           },
         },
       });
@@ -60,7 +60,7 @@ export default function Login() {
         </p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          {/* ⭐ 회원가입 모드일 때만 '이름' 입력창 보여주기 */}
+          
           {!isLoginMode && (
             <input
               type="text"

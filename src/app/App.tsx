@@ -3,6 +3,7 @@ import { supabase } from "./supabaseClient";
 import { Session } from "@supabase/supabase-js";
 
 import Login from "./components/Login";
+import MyPage from "./components/MyPage";
 import { ChatSidebar } from "./components/chat-sidebar";
 import { ChatHeader } from "./components/chat-header";
 import { ChatMessage } from "./components/chat-message";
@@ -16,18 +17,20 @@ type Message = {
   created_at: string;
 };
 
+// 화면 모드 ('chat' 또는 'mypage')
+type ViewMode = "chat" | "mypage";
+
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [viewMode, setViewMode] = useState<ViewMode>("chat");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
     });
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
 
@@ -66,63 +69,74 @@ export default function App() {
 
   const handleSendMessage = async (text: string) => {
     if (!text.trim() || !session) return;
-
-    // ⭐ 핵심 변경: 이메일 대신 저장해둔 '이름(full_name)'을 가져옵니다.
-    // 만약 이름이 없으면(옛날 계정 등) 이메일 앞부분을 씁니다.
     const userName = session.user.user_metadata.full_name || session.user.email?.split("@")[0] || "익명";
 
     const { error } = await supabase.from("messages").insert([
-      {
-        content: text,
-        sender_name: userName, // 여기에 이름을 저장!
-        is_me: false,
-      },
+      { content: text, sender_name: userName, is_me: false },
     ]);
-
     if (error) console.error("전송 에러:", error);
   };
 
+  // 로그아웃 함수 (Supabase 로그아웃)
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    // 화면을 새로고침해서 로그인 페이지로 돌아가게 함
+    window.location.reload(); 
   };
 
   if (!session) {
     return <Login />;
   }
 
-  // ⭐ 현재 접속자 이름 가져오기
+  if (viewMode === "mypage") {
+    return <MyPage user={session.user} onBack={() => setViewMode("chat")} />;
+  }
+
   const currentUserName = session.user.user_metadata.full_name || session.user.email?.split("@")[0];
 
   return (
     <div className="flex h-screen bg-background">
       <ChatSidebar contacts={[]} onSelectContact={() => {}} selectedContactId={null} />
       <div className="flex flex-1 flex-col">
+        {/* 상단 헤더 영역 */}
         <div className="flex items-center justify-between border-b p-4">
-            <ChatHeader
+          <ChatHeader
             contact={{
-                id: "1",
-                name: `접속중: ${currentUserName}`, // 헤더에도 내 이름 표시
-                avatar: "",
-                status: "online",
-                lastMessage: "",
-                timestamp: "",
-                unread: 0,
+              id: "1",
+              name: `💬 채팅방 (나: ${currentUserName})`,
+              avatar: "",
+              status: "online",
+              lastMessage: "",
+              timestamp: "",
+              unread: 0,
             }}
-            />
+          />
+          
+          
+          <div className="flex gap-2">
+            {/* 1. 마이페이지 버튼 */}
+            <button
+              onClick={() => setViewMode("mypage")}
+              className="flex items-center gap-2 rounded-full bg-gray-100 px-4 py-2 text-sm font-semibold hover:bg-gray-200 transition"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              MY
+            </button>
+            
+            {/* 2. 로그아웃 버튼 (새로 추가됨) */}
             <button 
                 onClick={handleLogout}
-                className="rounded bg-red-500 px-3 py-1 text-sm text-white hover:bg-red-600"
+                className="flex items-center gap-1 rounded-full bg-red-50 px-4 py-2 text-sm font-semibold text-red-500 hover:bg-red-100 transition"
             >
                 로그아웃
             </button>
+          </div>
         </div>
 
         <ScrollArea className="flex-1 p-4">
           <div className="flex flex-col gap-4">
             {messages.map((msg) => {
-              // 보낸 사람이 '내 이름'과 같은지 확인
               const isMyMessage = msg.sender_name === currentUserName;
-
               return (
                 <ChatMessage
                   key={msg.id}
