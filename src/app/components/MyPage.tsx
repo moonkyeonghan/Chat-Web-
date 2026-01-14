@@ -101,11 +101,11 @@ export default function MyPage({ user, onBack }: Props) {
               <div className="text-xs text-gray-500">게시물</div>
             </div>
             <div>
-              <div className="font-bold text-lg">120</div>
+              <div className="font-bold text-lg">0</div>
               <div className="text-xs text-gray-500">팔로워</div>
             </div>
             <div>
-              <div className="font-bold text-lg">15</div>
+              <div className="font-bold text-lg">0</div>
               <div className="text-xs text-gray-500">팔로잉</div>
             </div>
           </div>
